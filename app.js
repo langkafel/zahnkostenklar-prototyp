@@ -1,6 +1,9 @@
 const data = window.ZKK_DEMO_DATA;
 const screen = document.querySelector("#demo-screen");
 const stepperItems = [...document.querySelectorAll(".demo-stepper span")];
+const analysisText = document.querySelector("#analysis-text");
+const analysisFile = document.querySelector("#analysis-file");
+const analysisOutput = document.querySelector("#analysis-output");
 let demoStep = 0;
 let highestDemoStep = 0;
 
@@ -223,6 +226,144 @@ stepperItems.forEach((item, index) => {
       setStep(index);
     }
   });
+});
+
+function parseEuro(value) {
+  if (!value) return null;
+  return Number(value.replace(/\./g, "").replace(",", "."));
+}
+
+function formatEuro(value) {
+  return `${value.toFixed(2).replace(".", ",")} EUR`;
+}
+
+function findAmount(line) {
+  const matches = [...line.matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2})\s*(?:EUR|€)?/gi)];
+  return matches.length ? parseEuro(matches[matches.length - 1][1]) : null;
+}
+
+function findFactor(line) {
+  const factor = line.match(/(?:Faktor|Fkt\.?|x)\s*([0-9]+[,.][0-9]+)/i);
+  return factor ? parseEuro(factor[1]) : null;
+}
+
+function createFinding(type, code, title, detail, level = "question") {
+  return { type, code, title, detail, level };
+}
+
+function analyzeText(rawText) {
+  const text = rawText.replace(/\u00a0/g, " ");
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const findings = [];
+  const seen = new Set();
+  let recognizedPositions = 0;
+  let amountTotal = 0;
+
+  for (const line of lines) {
+    const amount = findAmount(line);
+    if (amount) amountTotal += amount;
+
+    const gozMatches = [...line.matchAll(/\b(?:GOZ\s*)?(\d{4})\b/gi)];
+    for (const match of gozMatches) {
+      const code = match[1];
+      const catalogEntry = data.ruleCatalog.goz[code];
+      const explicitGoz = /\bGOZ\b/i.test(line.slice(Math.max(0, match.index - 8), match.index + match[0].length + 1));
+      const looksLikeYear = /^(19|20)\d{2}$/.test(code);
+      if ((!catalogEntry && !explicitGoz) || looksLikeYear) continue;
+      const key = `goz-${code}-${line}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recognizedPositions += 1;
+
+      if (!catalogEntry) {
+        findings.push(createFinding("GOZ", code, "GOZ-Nummer nicht im Demo-Katalog", "Die Nummer wurde erkannt, ist aber in der kleinen Prototyp-Regelbasis noch nicht hinterlegt.", "expert"));
+        continue;
+      }
+
+      findings.push(createFinding("GOZ", code, catalogEntry.label, `Position im Demo-Katalog gefunden. Quelle: ${catalogEntry.source}.`, "ok"));
+
+      const factor = findFactor(line);
+      if (factor && factor > 2.3) {
+        findings.push(createFinding("GOZ", code, "Erhoehter Faktor", `Faktor ${factor.toString().replace(".", ",")} erkannt. Eine verstaendliche Begruendung ist fuer Patient:innen besonders wichtig.`, factor > 3.5 ? "expert" : "review"));
+      }
+
+      if (amount && factor && catalogEntry.points) {
+        const expected = catalogEntry.points * data.ruleCatalog.gozPointValue * factor;
+        const difference = Math.abs(expected - amount);
+        findings.push(createFinding("GOZ", code, "Rechnerische Plausibilitaet", `Erwarteter Betrag bei Faktor ${factor.toString().replace(".", ",")}: ca. ${formatEuro(expected)}. Erkannter Betrag: ${formatEuro(amount)}.`, difference <= 0.08 ? "ok" : "question"));
+      }
+    }
+
+    const belMatches = [...line.matchAll(/\b(?:BEL\s*)?(\d{3}\s?\d)\b/gi)];
+    for (const match of belMatches) {
+      const digits = match[1].replace(/\s/g, "");
+      const normalized = `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      const catalogEntry = data.ruleCatalog.bel[normalized];
+      const explicitBel = /\b(BEL|L-Nr\.?)\b/i.test(line);
+      if (!catalogEntry && !explicitBel) continue;
+      const key = `bel-${normalized}-${line}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recognizedPositions += 1;
+      findings.push(createFinding("BEL", normalized, catalogEntry?.label || "BEL-Position erkannt", catalogEntry ? `Position im BEL-Demo-Katalog gefunden. Quelle: ${catalogEntry.source}.` : "Position erkannt, aber noch nicht in der kleinen Prototyp-Regelbasis hinterlegt.", catalogEntry ? "ok" : "question"));
+      if (catalogEntry?.gewerblich && amount) {
+        const reference = catalogEntry.gewerblich;
+        const difference = Math.abs(reference - amount);
+        findings.push(createFinding("BEL", normalized, "Laborpreis-Plausibilitaet", `Referenz gewerbliches Labor: ca. ${formatEuro(reference)}. Erkannter Betrag: ${formatEuro(amount)}.`, difference <= 0.1 ? "ok" : "question"));
+      }
+    }
+
+    if (/Materialkosten|Material|Labor/i.test(line) && amount) {
+      findings.push(createFinding("Kostenblock", "-", "Labor-/Materialhinweis", `Kostenblock mit ${formatEuro(amount)} erkannt. Sinnvoll ist eine nachvollziehbare Aufschluesselung nach Labor- und Materialpositionen.`, "question"));
+    }
+  }
+
+  if (!findings.length && text.trim()) {
+    findings.push(createFinding("Analyse", "-", "Keine strukturierten Positionen erkannt", "Der Text enthaelt noch keine klar erkennbaren GOZ-, BEL- oder Betragszeilen. Fuer Scan-Tests bitte OCR-Text mit Positionsnummern einfuegen.", "question"));
+  }
+
+  return { findings, recognizedPositions, amountTotal };
+}
+
+function renderAnalysis(result) {
+  const chipClass = { ok: "ok", review: "review", question: "question", expert: "expert" };
+  analysisOutput.innerHTML = `
+    <div class="metric-grid analysis-metrics">
+      <article><span>Positionen erkannt</span><strong>${result.recognizedPositions}</strong></article>
+      <article><span>Summe erkannter Betraege</span><strong>${formatEuro(result.amountTotal)}</strong></article>
+      <article><span>Hinweise</span><strong>${result.findings.length}</strong></article>
+      <article><span>Datenfluss</span><strong>nur lokal</strong></article>
+    </div>
+    <div class="analysis-list">
+      ${result.findings.map((item) => `
+        <article>
+          <div><span class="chip ${chipClass[item.level]}">${chipLabels[item.level] || "Rueckfrage sinnvoll"}</span><span class="analysis-code">${item.type} ${item.code}</span></div>
+          <h4>${item.title}</h4>
+          <p>${item.detail}</p>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+document.querySelector("#load-sample-analysis")?.addEventListener("click", () => {
+  analysisText.value = data.ruleCatalog.sampleOcrText;
+});
+
+document.querySelector("#run-analysis")?.addEventListener("click", () => {
+  renderAnalysis(analyzeText(analysisText.value));
+});
+
+analysisFile?.addEventListener("change", async () => {
+  const file = analysisFile.files?.[0];
+  if (!file) return;
+  if (file.type.includes("pdf") || file.type.startsWith("image/")) {
+    analysisOutput.innerHTML = `<p class="demo-confirmation">Datei erkannt: ${file.name}. Dieser statische Prototyp hat noch keine OCR. Bitte Text aus einem OCR-Tool einfuegen oder eine Text-/CSV-/XML-Datei verwenden.</p>`;
+    return;
+  }
+  const text = await file.text();
+  analysisText.value = text.slice(0, 24000);
+  renderAnalysis(analyzeText(analysisText.value));
 });
 
 renderStep();

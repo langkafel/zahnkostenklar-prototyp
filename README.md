@@ -38,6 +38,21 @@ Die Website ist statisch. Oeffnen Sie `index.html` direkt im Browser oder starte
 - `demo-data.js`: Ausschliesslich synthetische Beispielrechnung und Ergebnisdaten
 - `README.md`: Projektbeschreibung, Betriebshinweise und Leitplanken
 
+## Lokaler Erkennungs-Testmodus
+
+Der Prototyp enthaelt einen lokalen Testbereich fuer OCR-Text, TXT-, CSV- und XML-Dateien. Die Analyse laeuft ausschliesslich im Browser, ohne Backend und ohne Speicherung.
+
+Aktuell werden exemplarisch erkannt:
+
+- GOZ-Positionsnummern aus einem kleinen Demo-Katalog
+- BEL-Positionsnummern aus einem kleinen Demo-Katalog
+- Faktoren, insbesondere Werte ueber 2,3
+- Euro-Betraege in Positionszeilen
+- einfache rechnerische Plausibilitaet fuer GOZ-Positionen
+- Labor- und Materialhinweise
+
+Scan-PDFs und Bilddateien werden in diesem statischen Prototyp noch nicht per OCR ausgelesen. Fuer Tests bitte OCR-Text einfuegen oder synthetische Textdateien verwenden.
+
 ## Naechste Ausbaustufen
 
 1. Nutzer-Feedback-Test

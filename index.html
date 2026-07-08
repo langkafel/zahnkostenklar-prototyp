@@ -15,6 +15,7 @@
       </a>
       <nav class="main-nav" aria-label="Hauptnavigation">
         <a href="#demo">Demo</a>
+        <a href="#erkennung">Erkennung</a>
         <a href="#bericht">Beispielbericht</a>
         <a href="#preise">Pakete</a>
         <a href="#faq">FAQ</a>
@@ -106,6 +107,42 @@
             <p>Die Demo-Rechnung ist rechnerisch ueberwiegend nachvollziehbar. Einzelne Positionen sind erklaerungsbeduerftig, insbesondere ein erhoehter Faktor und ein hoher Laboranteil. Eine sachliche Rueckfrage an die Praxis kann sinnvoll sein.</p>
           </div>
           <a class="button primary" href="#demo" data-demo-jump="report">Beispielbericht oeffnen</a>
+        </div>
+      </section>
+
+      <section id="erkennung" class="section analyzer-section">
+        <div class="section-heading">
+          <p class="eyebrow">Lokaler Testmodus</p>
+          <h2>Erkennung mit OCR-Text oder Testdatei ausprobieren</h2>
+          <p>Dieser Bereich verarbeitet Inhalte nur lokal im Browser. Bitte fuer Tests weiterhin keine echten Gesundheitsdaten verwenden, sondern synthetische, geschwaerzte oder bewusst verfremdete Beispiele.</p>
+        </div>
+        <div class="analyzer-grid">
+          <article class="demo-card">
+            <h3>Testdaten eingeben</h3>
+            <div class="upload-simulation">
+              <strong>Lokaler Prototyp - keine Uebertragung, keine Speicherung.</strong>
+              <span>Text-, CSV- und XML-Dateien koennen lokal gelesen werden. Scan-PDFs brauchen spaeter OCR; hier bitte OCR-Text einfuegen.</span>
+            </div>
+            <label class="file-label">
+              Testdatei lokal auswaehlen
+              <input id="analysis-file" type="file" accept=".txt,.csv,.xml,.pdf,image/*">
+            </label>
+            <label class="feedback-label">
+              OCR-Text oder Rechnungszeilen einfuegen
+              <textarea id="analysis-text" rows="9" placeholder="Beispiel: GOZ 2060 Kompositfuellung Faktor 3,5 Betrag 103,74 EUR"></textarea>
+            </label>
+            <div class="button-row">
+              <button class="button secondary" type="button" id="load-sample-analysis">Demo-OCR-Text laden</button>
+              <button class="button primary" type="button" id="run-analysis">Lokal analysieren</button>
+            </div>
+            <p class="micro-note">PDF- und Bilddateien werden in diesem statischen Prototyp noch nicht per OCR ausgelesen. Dafuer ist spaeter ein OCR-Schritt noetig.</p>
+          </article>
+          <article class="demo-card wide">
+            <h3>Erkannte Hinweise</h3>
+            <div id="analysis-output" class="analysis-output">
+              <p class="empty-state">Noch keine Analyse gestartet.</p>
+            </div>
+          </article>
         </div>
       </section>
 

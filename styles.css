@@ -614,6 +614,71 @@ th {
   font-weight: 400;
 }
 
+.analyzer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.file-label {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.file-label input {
+  width: 100%;
+  padding: 13px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.analysis-output {
+  display: grid;
+  gap: 16px;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 20px;
+  border-radius: 8px;
+  background: #f6faf9;
+  color: var(--muted);
+}
+
+.analysis-metrics {
+  margin-top: 0;
+}
+
+.analysis-list {
+  display: grid;
+  gap: 12px;
+}
+
+.analysis-list article {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.analysis-list article > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.analysis-code {
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .pricing-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -683,6 +748,7 @@ details p {
   .hero,
   .two-column,
   .demo-grid,
+  .analyzer-grid,
   .pricing-grid {
     grid-template-columns: 1fr;
   }
