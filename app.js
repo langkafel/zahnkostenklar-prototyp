@@ -2,6 +2,7 @@ const data = window.ZKK_DEMO_DATA;
 const screen = document.querySelector("#demo-screen");
 const stepperItems = [...document.querySelectorAll(".demo-stepper span")];
 let demoStep = 0;
+let highestDemoStep = 0;
 
 const chipLabels = {
   ok: "nachvollziehbar",
@@ -12,7 +13,12 @@ const chipLabels = {
 
 function setStep(step) {
   demoStep = step;
-  stepperItems.forEach((item, index) => item.classList.toggle("active", index === step));
+  highestDemoStep = Math.max(highestDemoStep, step);
+  stepperItems.forEach((item, index) => {
+    item.classList.toggle("active", index === step);
+    item.classList.toggle("available", index <= highestDemoStep);
+    item.setAttribute("aria-disabled", index <= highestDemoStep ? "false" : "true");
+  });
   renderStep();
   document.querySelector("#demo").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -200,6 +206,22 @@ document.querySelectorAll("[data-demo-jump='report']").forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
     setStep(4);
+  });
+});
+
+stepperItems.forEach((item, index) => {
+  item.setAttribute("role", "button");
+  item.setAttribute("tabindex", "0");
+  item.addEventListener("click", () => {
+    if (index <= highestDemoStep) {
+      setStep(index);
+    }
+  });
+  item.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && index <= highestDemoStep) {
+      event.preventDefault();
+      setStep(index);
+    }
   });
 });
 

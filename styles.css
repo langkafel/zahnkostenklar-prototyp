@@ -388,11 +388,29 @@ h3 {
   text-align: center;
   font-size: 0.88rem;
   font-weight: 800;
+  cursor: not-allowed;
+  transition: background 0.18s ease, color 0.18s ease;
 }
 
 .demo-stepper .active {
   background: var(--secondary);
   color: var(--primary);
+}
+
+.demo-stepper .available {
+  cursor: pointer;
+}
+
+.demo-stepper .available:hover,
+.demo-stepper .available:focus-visible {
+  background: #eef8f5;
+  color: var(--primary);
+  outline: none;
+}
+
+.demo-stepper .active:hover,
+.demo-stepper .active:focus-visible {
+  background: var(--secondary);
 }
 
 .demo-screen {
